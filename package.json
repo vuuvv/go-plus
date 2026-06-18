@@ -3,8 +3,12 @@
   "displayName": "Go Plus",
   "description": "VSCode extension skeleton for table-driven Go test run entries.",
   "version": "0.0.1",
-  "publisher": "go-plus",
-  "private": true,
+  "publisher": "vuuvv",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vuuvv/go-plus.git"
+  },
   "engines": {
     "vscode": "^1.90.0"
   },
