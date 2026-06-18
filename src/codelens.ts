@@ -87,10 +87,20 @@ export class GoTestCodeLensProvider implements vscode.CodeLensProvider, vscode.D
         return [];
       }
       return createGoTestCodeLensTargets(result, config).map(target => {
+        const command =
+          target.kind === 'run'
+            ? {
+                title: target.title,
+                command: commands.runTest,
+                arguments: [target.runTarget]
+              }
+            : {
+                title: target.title,
+                command: commands.refreshCurrentFileTestTree,
+                arguments: [target.file]
+              };
         return new vscode.CodeLens(toVsCodeRange(target.range), {
-          title: target.title,
-          command: commands.runTest,
-          arguments: [target.runTarget]
+          ...command
         });
       });
     } catch (error) {

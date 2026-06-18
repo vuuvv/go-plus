@@ -555,6 +555,22 @@ runner 必须生成兼容 Go subtest 选择规则的正则路径：
 - 完整测试套件通过，并在工作文档中记录结果。
 - 里程碑文档更新当前可进行操作，例如如何启用 Testing API、如何执行项目级刷新、如何排查未显示文件。
 
+### 里程碑 7：当前文件测试树刷新 CodeLens
+
+- 在 Go `_test.go` 文件顶部添加 CodeLens，允许用户刷新当前文件对应的 Testing API 测试树节点。
+- 添加命令 `goPlus.refreshCurrentFileTestTree`，支持 CodeLens 传入文件路径，也支持命令面板从当前编辑器推断文件。
+- 当前文件刷新应复用 Testing API 单文件刷新逻辑，并优先使用未保存编辑器内容。
+- Testing API 未启用时，点击 CodeLens 或命令应给出清晰提示，不产生异常。
+- 更新 manifest、CodeLens 目标生成测试、命令常量测试和工作文档。
+
+退出标准：
+
+- 打开 Go `_test.go` 文件后，文件顶部出现 `Refresh Test Tree` CodeLens。
+- 点击该 CodeLens 只刷新当前文件在 `Go Plus Table Tests` 中的节点。
+- 当前文件不是 `_test.go` 或 Testing API 未启用时，用户看到清晰提示。
+- 完整测试套件通过，并在工作文档中记录结果。
+- 里程碑文档更新当前可进行操作，例如如何点击顶部 CodeLens 刷新当前文件测试树。
+
 ## 15. 测试 fixture 计划
 
 必备 fixtures：

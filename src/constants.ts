@@ -10,7 +10,9 @@ export const commands = {
   /** 从 CodeLens 触发 `go test -run` 的命令入口。 */
   runTest: 'goPlus.runTest',
   /** 重新扫描 workspace 并刷新实验 Testing API 测试树。 */
-  refreshTestTree: 'goPlus.refreshTestTree'
+  refreshTestTree: 'goPlus.refreshTestTree',
+  /** 只刷新当前 Go 测试文件在实验 Testing API 测试树中的节点。 */
+  refreshCurrentFileTestTree: 'goPlus.refreshCurrentFileTestTree'
 } as const;
 
 /** VSCode output channel 名称，后续 runner 会复用同一个频道展示 `go test` 输出。 */

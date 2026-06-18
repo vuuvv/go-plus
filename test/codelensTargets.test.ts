@@ -2,7 +2,7 @@
  * CodeLens 目标生成测试。
  *
  * 真实 `vscode.CodeLens` 类型只能在 Extension Host 中完整运行；这里测试不依赖 VSCode API 的纯函数层，
- * 覆盖 provider 最核心的行为：函数级和 case 级入口是否按配置显示，以及 runner 参数是否正确。
+ * 覆盖 provider 最核心的行为：文件级刷新入口、函数级和 case 级入口是否按配置显示，以及 runner 参数是否正确。
  */
 
 import assert from 'node:assert/strict';
@@ -58,17 +58,28 @@ describe('CodeLens target generation', () => {
 
     assert.deepEqual(
       targets.map(target => target.title),
-      ['Run Test', 'Run Case']
+      ['Refresh Test Tree', 'Run Test', 'Run Case']
     );
-    assert.deepEqual(targets[0]?.runTarget, {
+    assert.deepEqual(targets[0], {
+      title: 'Refresh Test Tree',
+      range: {
+        start: { line: 0, character: 0 },
+        end: { line: 0, character: 0 }
+      },
+      kind: 'refreshCurrentFileTestTree',
+      file
+    });
+    assert.equal(targets[1]?.kind, 'run');
+    assert.deepEqual(targets[1]?.kind === 'run' ? targets[1].runTarget : undefined, {
       file,
       packageDir: join('/', 'workspace', 'repo', 'pkg'),
       testName: 'TestNormalize',
       subtestPath: [],
       label: 'TestNormalize'
     });
-    assert.deepEqual(targets[1]?.runTarget.subtestPath, ['empty input']);
-    assert.deepEqual(targets[1]?.range, range);
+    assert.equal(targets[2]?.kind, 'run');
+    assert.deepEqual(targets[2]?.kind === 'run' ? targets[2].runTarget.subtestPath : undefined, ['empty input']);
+    assert.deepEqual(targets[2]?.range, range);
   });
 
   it('honors function and case CodeLens visibility settings', () => {
@@ -76,13 +87,13 @@ describe('CodeLens target generation', () => {
       createGoTestCodeLensTargets(parseResult(), { showFunctionRun: false, showCaseRun: true }).map(
         target => target.title
       ),
-      ['Run Case']
+      ['Refresh Test Tree', 'Run Case']
     );
     assert.deepEqual(
       createGoTestCodeLensTargets(parseResult(), { showFunctionRun: true, showCaseRun: false }).map(
         target => target.title
       ),
-      ['Run Test']
+      ['Refresh Test Tree', 'Run Test']
     );
   });
 });

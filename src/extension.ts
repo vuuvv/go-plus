@@ -10,6 +10,7 @@ import { dirname } from 'node:path';
 import * as vscode from 'vscode';
 import { commands, configurationKeys, outputChannelName } from './constants';
 import { GoTestCodeLensProvider } from './codelens';
+import { isGoTestFile } from './parser';
 import { runGoTestTarget, type GoTestRunTarget } from './runner';
 import { GoPlusTestingApiPrototypeManager } from './testing';
 import { normalizeTableTestConfig } from './tableTestConfig';
@@ -74,6 +75,33 @@ export function activate(context: vscode.ExtensionContext): void {
     void vscode.window.showInformationMessage(`Go Plus: refreshed Test Explorer tree from ${refreshed} Go test file(s).`);
   });
 
+  const refreshCurrentFileTestTreeCommand = vscode.commands.registerCommand(
+    commands.refreshCurrentFileTestTree,
+    async (fileArg: unknown) => {
+      outputChannel.show(true);
+      if (!readTestingApiEnabledFromWorkspace()) {
+        void vscode.window.showInformationMessage(
+          'Go Plus: enable goPlus.tableTests.testingApi.enabled before refreshing the current file in Test Explorer.'
+        );
+        return;
+      }
+
+      const file = normalizeRefreshFileArgument(fileArg);
+      if (!file || !isGoTestFile(file)) {
+        void vscode.window.showErrorMessage('Go Plus: open a Go _test.go file before refreshing the current test tree.');
+        return;
+      }
+
+      testingApiPrototype.setEnabled(true);
+      const refreshed = await testingApiPrototype.refreshFile(file);
+      if (!refreshed) {
+        void vscode.window.showErrorMessage('Go Plus: current file is not a Go test file.');
+        return;
+      }
+      void vscode.window.showInformationMessage('Go Plus: refreshed current file in Test Explorer.');
+    }
+  );
+
   const codeLensRegistration = vscode.languages.registerCodeLensProvider(
     { language: 'go', scheme: 'file', pattern: '**/*_test.go' },
     goTestCodeLensProvider
@@ -101,6 +129,7 @@ export function activate(context: vscode.ExtensionContext): void {
     noopCommand,
     runTestCommand,
     refreshTestTreeCommand,
+    refreshCurrentFileTestTreeCommand,
     goTestCodeLensProvider,
     testingApiPrototype,
     codeLensRegistration,
@@ -108,6 +137,13 @@ export function activate(context: vscode.ExtensionContext): void {
     documentSaveSubscription,
     configurationSubscription
   );
+}
+
+function normalizeRefreshFileArgument(fileArg: unknown): string | undefined {
+  if (typeof fileArg === 'string' && fileArg !== '') {
+    return fileArg;
+  }
+  return vscode.window.activeTextEditor?.document.uri.fsPath;
 }
 
 /** 从 VSCode 配置读取实验 Testing API 开关。 */

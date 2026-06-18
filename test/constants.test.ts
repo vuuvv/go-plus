@@ -12,6 +12,7 @@ describe('extension skeleton constants', () => {
     assert.equal(commands.noop, 'goPlus.noop');
     assert.equal(commands.runTest, 'goPlus.runTest');
     assert.equal(commands.refreshTestTree, 'goPlus.refreshTestTree');
+    assert.equal(commands.refreshCurrentFileTestTree, 'goPlus.refreshCurrentFileTestTree');
   });
 
   it('uses a stable output channel name', () => {

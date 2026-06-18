@@ -33,7 +33,8 @@ describe('VSCode extension manifest', () => {
       'workspaceContains:**/*_test.go',
       'onCommand:goPlus.noop',
       'onCommand:goPlus.runTest',
-      'onCommand:goPlus.refreshTestTree'
+      'onCommand:goPlus.refreshTestTree',
+      'onCommand:goPlus.refreshCurrentFileTestTree'
     ]);
   });
 
@@ -50,6 +51,10 @@ describe('VSCode extension manifest', () => {
       {
         command: commands.refreshTestTree,
         title: 'Go Plus: Refresh Test Tree'
+      },
+      {
+        command: commands.refreshCurrentFileTestTree,
+        title: 'Go Plus: Refresh Current File Test Tree'
       }
     ]);
   });

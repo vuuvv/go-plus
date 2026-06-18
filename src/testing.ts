@@ -67,6 +67,14 @@ export class GoPlusTestingApiPrototypeManager implements vscode.Disposable {
     void this.prototype?.refreshDocument(document);
   }
 
+  /** 打开或复用指定 Go 测试文件，并只刷新该文件对应的测试树节点；关闭时返回 false。 */
+  public async refreshFile(file: string): Promise<boolean> {
+    if (!this.prototype) {
+      return false;
+    }
+    return await this.prototype.refreshFile(file);
+  }
+
   /** 扫描 workspace 中所有 Go 测试文件并重建实验测试树；关闭时返回 0。 */
   public async refreshWorkspace(): Promise<number> {
     if (!this.prototype) {
@@ -133,6 +141,18 @@ class GoPlusTestingApiPrototype implements vscode.Disposable {
       this.output.appendLine(`Go Plus Testing API parse failed for ${file}: ${String(error)}`);
       this.removeFileItems(file);
     }
+  }
+
+  /** 只刷新一个 Go 测试文件，供顶部 CodeLens 和命令面板入口复用。 */
+  public async refreshFile(file: string): Promise<boolean> {
+    if (!isGoTestFile(file)) {
+      return false;
+    }
+
+    const document = await openWorkspaceDocument(vscode.Uri.file(file));
+    await this.refreshDocument(document);
+    this.output.appendLine(`Go Plus Testing API refresh: refreshed current file ${file}.`);
+    return true;
   }
 
   /**

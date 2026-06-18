@@ -16,7 +16,8 @@
     "workspaceContains:**/*_test.go",
     "onCommand:goPlus.noop",
     "onCommand:goPlus.runTest",
-    "onCommand:goPlus.refreshTestTree"
+    "onCommand:goPlus.refreshTestTree",
+    "onCommand:goPlus.refreshCurrentFileTestTree"
   ],
   "main": "./out/src/extension.js",
   "contributes": {
@@ -32,6 +33,10 @@
       {
         "command": "goPlus.refreshTestTree",
         "title": "Go Plus: Refresh Test Tree"
+      },
+      {
+        "command": "goPlus.refreshCurrentFileTestTree",
+        "title": "Go Plus: Refresh Current File Test Tree"
       }
     ],
     "configuration": {
