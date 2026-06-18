@@ -8,7 +8,7 @@
 
 import { dirname } from 'node:path';
 import * as vscode from 'vscode';
-import { commands, outputChannelName } from './constants';
+import { commands, configurationKeys, outputChannelName } from './constants';
 import { GoTestCodeLensProvider } from './codelens';
 import { runGoTestTarget, type GoTestRunTarget } from './runner';
 
@@ -29,7 +29,7 @@ export function activate(context: vscode.ExtensionContext): void {
     void vscode.window.showInformationMessage('Go Plus is active.');
   });
 
-  const runTestCommand = vscode.commands.registerCommand(commands.runTest, async (target: GoTestRunTarget) => {
+  const runTestCommand = vscode.commands.registerCommand(commands.runTest, async (target: unknown) => {
     outputChannel.show(true);
 
     try {
@@ -54,12 +54,33 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   });
 
-  const codeLensProvider = vscode.languages.registerCodeLensProvider(
+  const goTestCodeLensProvider = new GoTestCodeLensProvider({ output: outputChannel });
+  const codeLensRegistration = vscode.languages.registerCodeLensProvider(
     { language: 'go', scheme: 'file', pattern: '**/*_test.go' },
-    new GoTestCodeLensProvider({ output: outputChannel })
+    goTestCodeLensProvider
   );
 
-  context.subscriptions.push(noopCommand, runTestCommand, codeLensProvider);
+  const documentChangeSubscription = vscode.workspace.onDidChangeTextDocument(event => {
+    goTestCodeLensProvider.refreshDocument(event.document.uri.fsPath);
+  });
+  const documentSaveSubscription = vscode.workspace.onDidSaveTextDocument(document => {
+    goTestCodeLensProvider.refreshDocument(document.uri.fsPath);
+  });
+  const configurationSubscription = vscode.workspace.onDidChangeConfiguration(event => {
+    if (Object.values(configurationKeys).some(key => event.affectsConfiguration(key))) {
+      goTestCodeLensProvider.refreshAll();
+    }
+  });
+
+  context.subscriptions.push(
+    noopCommand,
+    runTestCommand,
+    goTestCodeLensProvider,
+    codeLensRegistration,
+    documentChangeSubscription,
+    documentSaveSubscription,
+    configurationSubscription
+  );
 }
 
 /**
@@ -72,10 +93,29 @@ export function deactivate(): void {
   // 由 VSCode 订阅生命周期统一释放资源。
 }
 
-function normalizeRunTarget(target: GoTestRunTarget): GoTestRunTarget {
+function normalizeRunTarget(target: unknown): GoTestRunTarget {
+  if (!target || typeof target !== 'object') {
+    throw new Error('Run target is missing. Trigger this command from a Go Plus CodeLens entry.');
+  }
+
+  const candidate = target as Partial<GoTestRunTarget>;
+  if (typeof candidate.file !== 'string' || candidate.file === '') {
+    throw new Error('Run target does not include a Go test file path.');
+  }
+  if (typeof candidate.testName !== 'string' || candidate.testName === '') {
+    throw new Error('Run target does not include a Go test function name.');
+  }
+  if (typeof candidate.label !== 'string' || candidate.label === '') {
+    throw new Error('Run target does not include a display label.');
+  }
+
   return {
-    ...target,
-    packageDir: target.packageDir ?? dirname(target.file),
-    subtestPath: Array.isArray(target.subtestPath) ? target.subtestPath : []
+    file: candidate.file,
+    packageDir: typeof candidate.packageDir === 'string' ? candidate.packageDir : dirname(candidate.file),
+    testName: candidate.testName,
+    subtestPath: Array.isArray(candidate.subtestPath)
+      ? candidate.subtestPath.filter((segment): segment is string => typeof segment === 'string')
+      : [],
+    label: candidate.label
   };
 }

@@ -55,14 +55,35 @@ export function escapeRegExpLiteral(value: string): string {
 }
 
 /**
+ * 转义单个 Go `-run` 路径段。
+ *
+ * `t.Run` 注册 subtest 时，Go testing 会先把 subtest 名称改写为“可打印且无空白”的匹配名：
+ * 空格、换行、tab 等空白字符都会变成 `_`。runner 保留 UI label 的源码原名，但构造 `-run` 时必须
+ * 使用这个匹配名，否则带空格的 case 会显示正确却无法被 Go 选中。
+ */
+export function escapeGoTestRunSegment(value: string): string {
+  return escapeRegExpLiteral(rewriteGoTestName(value));
+}
+
+/** 按 Go testing 的 subtest name rewrite 规则处理空白字符。 */
+export function rewriteGoTestName(value: string): string {
+  return Array.from(value)
+    .map(character => (isGoTestingSpace(character.codePointAt(0) ?? 0) ? '_' : character))
+    .join('');
+}
+
+/**
  * 构造 Go subtest 选择路径。
  *
  * Go 的 `-run` 会按 `/` 分段匹配顶层测试和 subtest；每段分别加 `^...$`，可以避免
- * `TestFooBar` 或相似 case 名称被误匹配。名称中的 `/` 保留给 Go 自己的 subtest 路径语义，
- * 这是 Go 工具链既有行为，里程碑 3 先不额外拆分源码中的斜杠。
+ * `TestFooBar` 或相似 case 名称被误匹配。Go testing 同样会把 subtest 名称中的 `/` 当成层级切分，
+ * 所以源码里的一个 case 名称如果包含 `/api/v1`，这里也要展开成多个 pattern 段才能命中。
  */
 export function buildRunPattern(testName: string, subtestPath: readonly string[] = []): string {
-  return [testName, ...subtestPath].map(segment => `^${escapeRegExpLiteral(segment)}$`).join('/');
+  return [testName, ...subtestPath]
+    .flatMap(segment => rewriteGoTestName(segment).split('/'))
+    .map(segment => `^${escapeRegExpLiteral(segment)}$`)
+    .join('/');
 }
 
 /**
@@ -140,4 +161,26 @@ function shellQuote(value: string): string {
     return value;
   }
   return `'${value.replace(/'/g, "'\\''")}'`;
+}
+
+function isGoTestingSpace(codePoint: number): boolean {
+  if (codePoint < 0x2000) {
+    return (
+      codePoint === 0x09 ||
+      codePoint === 0x0a ||
+      codePoint === 0x0b ||
+      codePoint === 0x0c ||
+      codePoint === 0x0d ||
+      codePoint === 0x20 ||
+      codePoint === 0x85 ||
+      codePoint === 0xa0 ||
+      codePoint === 0x1680
+    );
+  }
+
+  if (codePoint <= 0x200a) {
+    return true;
+  }
+
+  return codePoint === 0x2028 || codePoint === 0x2029 || codePoint === 0x202f || codePoint === 0x205f || codePoint === 0x3000;
 }

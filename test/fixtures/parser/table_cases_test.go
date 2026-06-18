@@ -14,6 +14,7 @@ func TestKeyedNameTable(t *testing.T) {
 	}{
 		{name: "empty input", input: "", want: ""},
 		{name: "regex .* chars", input: "a", want: "a"},
+		{name: "url path /api/v1 [ok]", input: "b", want: "b"},
 	}
 
 	for _, tt := range tests {

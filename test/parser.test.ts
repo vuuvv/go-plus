@@ -94,7 +94,11 @@ describe('Go helper parser', () => {
 
     assert.deepEqual(
       testFunction.tableCases.map(tableCase => tableCase.label),
-      ['TestKeyedNameTable/empty input', 'TestKeyedNameTable/regex .* chars']
+      [
+        'TestKeyedNameTable/empty input',
+        'TestKeyedNameTable/regex .* chars',
+        'TestKeyedNameTable/url path /api/v1 [ok]'
+      ]
     );
 
     const emptyCase = findCase(testFunction, 'empty input');
@@ -142,5 +146,20 @@ describe('Go helper parser', () => {
     const result = await parser.parseTestFile(fixture.file, fixture.source);
 
     assert.deepEqual(findTestFunction(result, 'TestDynamicNamesAreSkipped').tableCases, []);
+  });
+
+  it('skips unsupported table patterns that would require data-flow or runtime evaluation', async () => {
+    const fixture = readFixture('unsupported_patterns_test.go');
+    const result = await parser.parseTestFile(fixture.file, fixture.source);
+
+    assert.deepEqual(
+      result.testFunctions.map(testFunction => [testFunction.name, testFunction.tableCases.length]),
+      [
+        ['TestHelperReturnedTableIsSkipped', 0],
+        ['TestVariableBackedEntryNameIsSkipped', 0],
+        ['TestAliasedRunNameIsSkipped', 0],
+        ['TestFormattedMapKeyIsSkipped', 0]
+      ]
+    );
   });
 });
